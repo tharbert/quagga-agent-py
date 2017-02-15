@@ -1,5 +1,6 @@
 
 import json
+import socket
 import sys
 import time
 from subprocess import check_output
@@ -15,6 +16,7 @@ def publish_to_kafka(topic, message):
 def main():
     # create empty set for recording down nodes
     down_peer_set = set()
+    local_hostname = socket.gethostname()
     while True:
         json_data = check_output(['cl-bgp', 'summary', 'show', 'json'])
         loaded = json.loads(json_data)
@@ -24,9 +26,9 @@ def main():
             # check for peer using BGP unnumbered and collect hostname
             try:
                 hostname = loaded['peers'][peer]['hostname']
-                peer_summary = '%s(%s):AS%s' % (peer, hostname, remote_as)
+                peer_summary = '%s:%s(%s):AS%s' % (local_hostname, peer, hostname, remote_as)
             except KeyError:
-                peer_summary = '%s:AS%s' % (peer, remote_as)
+                peer_summary = '%s:%s:AS%s' % (local_hostname, peer, remote_as)
             # check if peer state is down and not recorded
             if (state != 'Established') and (peer_summary not in down_peer_set):
                 down_peer_set.add(peer_summary)
